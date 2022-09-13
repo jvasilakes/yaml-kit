@@ -26,6 +26,73 @@ class ConfigError(Exception):
         super().__init__(*args, **kwargs)
 
 
+class BaseExperimentConfig(object):
+
+    @classmethod
+    def organized_params(cls):
+        for group in cls.parameter_groups:
+            for param in group:
+
+
+    def _git_info(self):
+        # log commit hash
+        with os.popen("git rev-parse --abbrev-ref HEAD") as p:
+            branch = p.read().strip()
+        with os.popen("git log --pretty=format:'%h' -n 1") as p:
+            commit = p.read().strip()
+        if branch == '':
+            branch = None
+        if commit == '':
+            commit = None
+        if None in (branch, commit):
+            warnings.warn("Error getting current git information. Are you in a git repo?")  # noqa
+        return branch, commit
+
+    def update(self, key, value, errors="raise"):
+        try:
+            curr_val = getattr(self, key)
+        except KeyError:
+            raise ConfigError(f"Unknown config parameter {key}")
+        param_type = type(curr_val)
+        if not isinstance(value, param_type):
+            try:
+                value = param_type(value)
+            except (ValueError, TypeError) as e:
+                if errors == "raise":
+                    raise e
+                elif errors == "warn":
+                    warnings.warn(f"Changing value of parameter {key} from {curr_val} ({param_type}) to {value} ({type(value)})")  # noqa
+        setattr(self, key, value)
+        self.validate(errors=errors)
+
+    def save_to_yaml(self, outpath):
+        with open(outpath, 'w') as outF:
+            for (param_type, param_names) in self.organized_param_names().items():  # noqa
+                outF.write(f"# {param_type}\n")
+                params_dict = OrderedDict()
+                for name in param_names:
+                    # Don't want to print out all the weird yaml
+                    # encodings for python objects.
+                    val = getattr(self, name)
+                    if isinstance(val, (OrderedDict, defaultdict)):
+                        val = dict(val)
+                    params_dict[name] = val
+                yaml.dump(params_dict, outF)
+                outF.write('\n')
+
+    def __eq__(self, other):
+        for name in self.param_names():
+            this_val = getattr(self, name)
+            that_val = getattr(other, name, None)
+            if this_val != that_val:
+                return False
+        return True
+
+    def copy(self):
+        kwargs = {name: getattr(self, name) for name in self.param_names()}
+        return self.__class__(**kwargs)
+
+
 class ExperimentConfig(object):
 
     @staticmethod
@@ -219,20 +286,6 @@ class ExperimentConfig(object):
         self.check_deprecations()
         if run_validate is True:
             self.validate()
-
-    def _git_info(self):
-        # log commit hash
-        with os.popen("git rev-parse --abbrev-ref HEAD") as p:
-            branch = p.read().strip()
-        with os.popen("git log --pretty=format:'%h' -n 1") as p:
-            commit = p.read().strip()
-        if branch == '':
-            branch = None
-        if commit == '':
-            commit = None
-        if None in (branch, commit):
-            warnings.warn("Error getting current git information. Are you in a git repo?")  # noqa
-        return branch, commit
 
     def __str__(self):
         organized_params_with_values = OrderedDict()
