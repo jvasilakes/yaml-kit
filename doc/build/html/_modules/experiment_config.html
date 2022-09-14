@@ -240,17 +240,21 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
 
-<div class="viewcode-block" id="BaseConfig.group"><a class="viewcode-back" href="../index.html#experiment_config.BaseConfig.group">[docs]</a>    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_name</span><span class="p">):</span>
+<div class="viewcode-block" id="BaseConfig.group"><a class="viewcode-back" href="../index.html#experiment_config.BaseConfig.group">[docs]</a>    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the specified parameter group by name.</span>
 
-<span class="sd">        :param str group_name: The group name to get.</span>
+<span class="sd">        :param str group_name: (Optional) The group name to get. If None,</span>
+<span class="sd">                               returns the Default group.</span>
 <span class="sd">        :returns: The group of parameters.</span>
 <span class="sd">        :rtype: dict</span>
 <span class="sd">        :raises: ConfigError</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">group_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">group_name</span> <span class="o">=</span> <span class="s2">&quot;Default&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">GROUPED_PARAMETERS</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">param_name</span><span class="p">:</span> <span class="n">param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">in</span> 
+                    <span class="bp">self</span><span class="o">.</span><span class="n">GROUPED_PARAMETERS</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ConfigError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.__class__}</span><span class="s2"> has no parameter group </span><span class="si">{group_name}</span><span class="s2">.&quot;</span><span class="p">)</span>  <span class="c1"># noqa</span></div>
 
@@ -260,7 +264,7 @@
 
 <span class="sd">        :rtype: dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">param_name</span><span class="p">:</span> <span class="n">param</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">param_name</span><span class="p">:</span> <span class="n">param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">GROUPED_PARAMETERS</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
                 <span class="k">for</span> <span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
 
@@ -273,9 +277,8 @@
 
 <span class="sd">        :raises: ConfigTypeError, ConfigWarning</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c1"># runs any code in the property</span>
-
+        <span class="c1"># Calling self.parameters() runs any code in the parameter block.</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param_val</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># Check if the type is correct</span>
             <span class="k">if</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">PARAM_TYPES</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">param_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PARAM_TYPES</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span>
