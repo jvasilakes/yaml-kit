@@ -2,6 +2,23 @@
 
 An extensible, flexible, and version-aware package for configuring and logging ML experiments.
 
+## Requirements
+
+ * `pyyaml`
+
+
+## Installation
+
+```
+python setup.py develop
+```
+
+### Uninstallation
+
+```
+python setup.py develop --uninstall
+```
+
 
 ## Usage
 

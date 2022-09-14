@@ -1,0 +1,13 @@
+# Default
+metric: f1
+
+# Losses
+loss_fn: mse
+
+# Training
+batch_size: 10
+use_old_method: true
+
+# Git
+branch: main
+commit: 88b4592
