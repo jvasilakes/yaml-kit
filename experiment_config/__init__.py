@@ -7,23 +7,23 @@ def parameter(group="Default", default=None, type=None):
     """
     A decorator for marking a config parameter.
 
-    ```
-    from experiment_config import BaseConfig, parameter
+    .. code-block:: python
 
-    class MyConfig(BaseConfig):
+       from experiment_config import BaseConfig, parameter
 
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
+       class MyConfig(BaseConfig):
 
-        @parameter(group="Group1", type=(str, int), default="hello!")
-        def thing(self):
-            # Any additional initialization/validation code here
-            return self._thing
-     ```
+           def __init__(self, **kwargs):
+               super().__init__(**kwargs)
+
+           @parameter(group="Group1", type=(str, int), default="hello!")
+           def thing(self):
+               # Any additional initialization/validation code here
+               return self._thing
 
     :param str group: (Optional) The parameter group to add this parameter to.
                       If not specified, adds the Default group.
-    :param default Any: (Optional) If specified, sets a default
+    :param Any default: (Optional) If specified, sets a default
                         value for this parameter.
     :param type type: (Optional) Can be a single type or a tuple of
                       types. If specified, restricts the values to
@@ -47,20 +47,20 @@ def deprecate():
     Mark the decorated parameter as deprecated.
     This will raise a warning when it is accessed.
 
-    ```
-    from experiment_config import BaseConfig, parameter
+    .. code-block:: python
 
-    class MyConfig(BaseConfig):
+       from experiment_config import BaseConfig, parameter
 
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
+       class MyConfig(BaseConfig):
 
-        @deprecate
-        @parameter()
-        def thing(self):
-            # Any additional initialization/validation code here
-            return self._thing
-     ```
+           def __init__(self, **kwargs):
+               super().__init__(**kwargs)
+
+           @deprecate
+           @parameter()
+           def thing(self):
+               # Any additional initialization/validation code here
+               return self._thing
     """
     def wrapper(func):
         if isinstance(func, property):
@@ -81,7 +81,7 @@ class ConfigError(Exception):
 class ConfigTypeError(ConfigError):
     """
     Exception for when a parameter value type does
-    not match that specified in the @parameter decorator.
+    not match that specified in the `@parameter` decorator.
     """
     pass
 
@@ -97,7 +97,7 @@ class ConfigVersionWarning(ConfigWarning):
     """
     Warning for when the current git version does not
     match the version read from a yaml file by
-    BaseConfig.from_yaml_file().
+    `BaseConfig.from_yaml_file()`.
     """
     pass
 
@@ -109,8 +109,39 @@ class BaseConfig(object):
     DEPRECATED_PARAMETERS = []
     VERSION_INFO = {}
 
+    """
+    The base experiment config class, which should be subclassed
+    to create your own config. The keyword arguments used to initialize
+    your subclass are those methods which you decorate with @parameter.
+
+    .. code-block:: python
+
+       from experiment_config import BaseConfig, parameter
+
+       class MyConfig(BaseConfig):
+
+            # This is always necessary
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+
+            @parameter()
+            def my_parameter(self):
+                # Add any initialization/validation code here
+                # The @parameter decorator creates a _my_parameter variable.
+                return self._my_parameter
+
+        config = MyConfig(my_parameter=2)
+    """
+
     @classmethod
     def from_yaml_file(cls, filepath, **override_kwargs):
+        """
+        Loads a config from the specified yaml file.
+        Override the values of any parameters in the yaml file
+        using keyword arguments.
+
+        :param str filepath: Path to the .yaml file.
+        """
         with open(filepath, 'r') as inF:
             config_dict = yaml.safe_load(inF)
         for (key, val) in override_kwargs.items():
@@ -119,6 +150,13 @@ class BaseConfig(object):
 
     @classmethod
     def save_default(cls, outpath):
+        """
+        Create a new yaml file with default parameter values to the
+        specified outpath. Any parameters without default values
+        will be save with an empty string.
+
+        :param str outpath: Path to a .yaml file to save.
+        """
         with open(outpath, 'w') as outF:
             for (group, params) in cls.GROUPED_PARAMETERS.items():
                 outF.write(f"# {group}\n")
@@ -149,7 +187,7 @@ class BaseConfig(object):
         if "branch" in kwargs or "commit" in kwargs:
             assert "branch" in kwargs and "commit" in kwargs, ConfigError("Must include both 'branch' and 'commit'")  # noqa
             seen_kws.update({"branch", "commit"})
-            curr_version = self.git_info()
+            curr_version = self._git_info()
             diff_version = False
             if kwargs["branch"] != curr_version["branch"]:
                 diff_version = True
@@ -171,17 +209,38 @@ class BaseConfig(object):
         self.validate()
 
     def group(self, group_name):
+        """
+        Get the specified parameter group by name.
+
+        :param str group_name: The group name to get.
+        :returns: The group of parameters.
+        :rtype: dict
+        :raises: ConfigError
+        """
         try:
             return self.GROUPED_PARAMETERS[group_name]
         except KeyError:
             raise ConfigError(f"{self.__class__} has no parameter group {group_name}.")  # noqa
 
     def parameters(self):
+        """
+        Return the ungrouped parameters.
+
+        :rtype: dict
+        """
         return {param_name: param
                 for group in self.GROUPED_PARAMETERS.values()
                 for (param_name, param) in group.items()}
 
     def validate(self):
+        """
+        Validate all parameters by
+         1. Running the code specified in the parameter.
+         2. Checking if the types are correct.
+         3. Checking if the parameter is deprecated.
+
+        :raises: ConfigTypeError, ConfigWarning
+        """
         for (param_name, param) in self.parameters().items():
             val = param(self)  # runs any code in the property
 
@@ -208,7 +267,7 @@ class BaseConfig(object):
                 if name in self.DEPRECATED_PARAMETERS:
                     formatted += " (deprecated)"
                 formatted += '\n'
-        git = self.git_info()
+        git = self._git_info()
         if git is not None:
             formatted += "Git:\n"
             for (key, val) in git.items():
@@ -216,6 +275,12 @@ class BaseConfig(object):
         return formatted.strip()
 
     def update(self, param_name, value):
+        """
+        Update the value of a parameter.
+
+        :param str param_name: The parameter to update.
+        :param Any value: The new value.
+        """
         if param_name not in self.parameters().keys():
             raise ConfigError(f"{self.__class__} has no attribute {param_name}")  # noqa
         setattr(self, f"_{param_name}", value)
@@ -232,11 +297,19 @@ class BaseConfig(object):
         return True
 
     def copy(self):
+        """
+        Copy this BaseConfig instance.
+        """
         kwargs = {param_name: param(self) for (param_name, param)
                   in self.parameters().items()}
         return self.__class__(**kwargs)
 
     def save_to_yaml(self, outpath):
+        """
+        Save this config in yaml format to the specified path.
+
+        :param str outpath: Where to save the config.
+        """
         with open(outpath, 'w') as outF:
             for (group, params) in self.GROUPED_PARAMETERS.items():
                 outF.write(f"# {group}\n")
@@ -244,12 +317,12 @@ class BaseConfig(object):
                                       for (name, param) in params.items()}
                 yaml.dump(params_with_values, outF)
                 outF.write('\n')
-            git = self.git_info()
+            git = self._git_info()
             if git is not None:
                 outF.write("# Git\n")
                 yaml.dump(git, outF)
 
-    def git_info(self):
+    def _git_info(self):
         # log commit hash
         with os.popen("git rev-parse --abbrev-ref HEAD") as p:
             branch = p.read().strip()
