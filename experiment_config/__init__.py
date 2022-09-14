@@ -208,17 +208,21 @@ class BaseConfig(object):
 
         self.validate()
 
-    def group(self, group_name):
+    def group(self, group_name=None):
         """
         Get the specified parameter group by name.
 
-        :param str group_name: The group name to get.
+        :param str group_name: (Optional) The group name to get. If None,
+                               returns the Default group.
         :returns: The group of parameters.
         :rtype: dict
         :raises: ConfigError
         """
+        if group_name is None:
+            group_name = "Default"
         try:
-            return self.GROUPED_PARAMETERS[group_name]
+            return {param_name: param(self) for (param_name, param) in 
+                    self.GROUPED_PARAMETERS[group_name].items()}
         except KeyError:
             raise ConfigError(f"{self.__class__} has no parameter group {group_name}.")  # noqa
 
@@ -228,7 +232,7 @@ class BaseConfig(object):
 
         :rtype: dict
         """
-        return {param_name: param
+        return {param_name: param(self)
                 for group in self.GROUPED_PARAMETERS.values()
                 for (param_name, param) in group.items()}
 
@@ -241,9 +245,8 @@ class BaseConfig(object):
 
         :raises: ConfigTypeError, ConfigWarning
         """
-        for (param_name, param) in self.parameters().items():
-            val = param(self)  # runs any code in the property
-
+        # Calling self.parameters() runs any code in the parameter block.
+        for (param_name, param_val) in self.parameters().items():
             # Check if the type is correct
             if param_name in self.PARAM_TYPES.keys():
                 param_types = self.PARAM_TYPES[param_name]
