@@ -250,8 +250,8 @@ class BaseConfig(object):
             # Check if the type is correct
             if param_name in self.PARAM_TYPES.keys():
                 param_types = self.PARAM_TYPES[param_name]
-                if not isinstance(val, param_types):
-                    raise ConfigTypeError(f"Value {val} of parameter '{param_name}' is not of type {param_types}")  # noqa
+                if not isinstance(param_val, param_types):
+                    raise ConfigTypeError(f"Value {param_val} of parameter '{param_name}' is not of type {param_types}")  # noqa
 
             # Check if deprecated
             if param_name in self.DEPRECATED_PARAMETERS:
