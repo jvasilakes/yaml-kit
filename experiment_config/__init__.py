@@ -78,6 +78,13 @@ class ConfigError(Exception):
     pass
 
 
+class ConfigKeyError(ConfigError):
+    """
+    Exception for when a required parameter is missing.
+    """
+    pass
+
+
 class ConfigTypeError(ConfigError):
     """
     Exception for when a parameter value type does
@@ -180,7 +187,7 @@ class BaseConfig(object):
                     if param_name in self.DEFAULT_PARAM_VALUES:
                         param_val = self.DEFAULT_PARAM_VALUES[param_name]
                     else:
-                        raise ConfigError(f"Missing keyword argument '{param_name}'")  # noqa
+                        raise ConfigKeyError(f"Missing keyword argument '{param_name}'")  # noqa
                 setattr(self, f"_{param_name}", param_val)
                 seen_kws.add(param_name)
 
@@ -221,7 +228,7 @@ class BaseConfig(object):
         if group_name is None:
             group_name = "Default"
         try:
-            return {param_name: param(self) for (param_name, param) in 
+            return {param_name: param(self) for (param_name, param) in
                     self.GROUPED_PARAMETERS[group_name].items()}
         except KeyError:
             raise ConfigError(f"{self.__class__} has no parameter group {group_name}.")  # noqa
@@ -259,23 +266,7 @@ class BaseConfig(object):
                               ConfigWarning)
 
     def __str__(self):
-        formatted = ''
-        sorted_groups = sorted(self.GROUPED_PARAMETERS.items(),
-                               key=lambda x: x[0])
-        for (group, params) in sorted_groups:
-            formatted += f"{group}:\n"
-            sorted_params = sorted(params.items(), key=lambda x: x[0])
-            for (name, prop) in sorted_params:
-                formatted += f"  {name}: {prop(self)}"
-                if name in self.DEPRECATED_PARAMETERS:
-                    formatted += " (deprecated)"
-                formatted += '\n'
-        git = self._git_info()
-        if git is not None:
-            formatted += "Git:\n"
-            for (key, val) in git.items():
-                formatted += f"  {key}: {val}\n"
-        return formatted.strip()
+        return self.yaml()
 
     def update(self, param_name, value):
         """
@@ -307,23 +298,29 @@ class BaseConfig(object):
                   in self.parameters().items()}
         return self.__class__(**kwargs)
 
-    def save_to_yaml(self, outpath):
+    def yaml(self, outpath=None):
         """
         Save this config in yaml format to the specified path.
 
         :param str outpath: Where to save the config.
         """
-        with open(outpath, 'w') as outF:
-            for (group, params) in self.GROUPED_PARAMETERS.items():
-                outF.write(f"# {group}\n")
-                params_with_values = {name: param(self)
-                                      for (name, param) in params.items()}
-                yaml.dump(params_with_values, outF)
-                outF.write('\n')
-            git = self._git_info()
-            if git is not None:
-                outF.write("# Git\n")
-                yaml.dump(git, outF)
+        yaml_str = ''
+        outF = None
+        if outpath is not None:
+            outF = open(outpath, 'w')
+        for (group, params) in self.GROUPED_PARAMETERS.items():
+            yaml_str += f"# {group}\n"
+            params_with_values = {name: param(self)
+                                  for (name, param) in params.items()}
+            yaml_str += yaml.dump(params_with_values) + '\n'
+        git = self._git_info()
+        if git is not None:
+            yaml_str += "# Git\n"
+            yaml_str += yaml.dump(git)
+        if outpath is not None:
+            with open(outpath, 'w') as outF:
+                outF.write(yaml_str)
+        return yaml_str
 
     def _git_info(self):
         # log commit hash

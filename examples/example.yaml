@@ -1,13 +1,20 @@
 # Default
-metric: f1
+metric: accuracy
 
 # Losses
 loss_fn: mse
 
 # Training
-batch_size: 10
-use_old_method: true
+batch_size: 2
+use_old_method: false
+
+# Model
+model_kwargs:
+  activation_fn: relu
+  dropout_prob: 0.0
+  input_dim: 2
+  output_dim: 5
 
 # Git
 branch: main
-commit: 88b4592
+commit: bdc3aed
