@@ -1,6 +1,9 @@
 import os
 import yaml
 import warnings
+import colorama as cr
+
+cr.init()
 
 
 def parameter(group="Default", default=None, type=None):
@@ -153,7 +156,7 @@ class BaseConfig(object):
             config_dict = yaml.safe_load(inF)
         for (key, val) in override_kwargs.items():
             config_dict[key] = val
-        return cls(**config_dict)
+        return cls(**config_dict, overridden_kwargs=override_kwargs.keys())
 
     @classmethod
     def save_default(cls, outpath):
@@ -183,6 +186,22 @@ class BaseConfig(object):
             for (param_name, param) in params.items():
                 try:
                     param_val = kwargs[param_name]
+                    if param_name in self.PARAM_TYPES.keys():
+                        # Try to cast the value to a supported type
+                        param_types = self.PARAM_TYPES[param_name]
+                        if not isinstance(param_types, (list, tuple)):
+                            param_types = [param_types]
+                        if not type(param_val) in param_types:
+                            success = False
+                            for ptype in param_types:
+                                try:
+                                    param_val = ptype(param_val)
+                                    success = True
+                                    break
+                                except ValueError:
+                                    continue
+                            if success is False:
+                                raise ConfigTypeError(f"Can't cast value {param_value} to supported types {param_types}")  # noqa
                 except KeyError:
                     if param_name in self.DEFAULT_PARAM_VALUES:
                         param_val = self.DEFAULT_PARAM_VALUES[param_name]
@@ -190,6 +209,10 @@ class BaseConfig(object):
                         raise ConfigKeyError(f"Missing keyword argument '{param_name}'")  # noqa
                 setattr(self, f"_{param_name}", param_val)
                 seen_kws.add(param_name)
+
+        self.overridden_kwargs = {}
+        if "overridden_kwargs" in kwargs.keys():
+            self.overridden_kwargs = kwargs.pop("overridden_kwargs")
 
         if "branch" in kwargs or "commit" in kwargs:
             assert "branch" in kwargs and "commit" in kwargs, ConfigError("Must include both 'branch' and 'commit'")  # noqa
@@ -266,7 +289,32 @@ class BaseConfig(object):
                               ConfigWarning)
 
     def __str__(self):
-        return self.yaml()
+        formatted = cr.Style.BRIGHT + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        formatted += cr.Style.RESET_ALL
+        sorted_groups = sorted(self.GROUPED_PARAMETERS.items(),
+                               key=lambda x: x[0])
+        for (group, params) in sorted_groups:
+            group_str = cr.Style.BRIGHT + f"{group}\n" + cr.Style.RESET_ALL
+            formatted += group_str
+            sorted_params = sorted(params.items(), key=lambda x: x[0])
+            for (name, prop) in sorted_params:
+                format_str = f" • {name}: {prop(self)}"
+                if name in self.DEPRECATED_PARAMETERS:
+                    format_str = cr.Fore.RED + format_str + " (deprecated)"
+                    format_str += cr.Style.RESET_ALL
+                if name in self.overridden_kwargs:
+                    format_str = cr.Fore.YELLOW + format_str + " (overridden)"
+                    format_str += cr.Style.RESET_ALL
+                formatted += format_str + '\n'
+        git = self._git_info()
+        if git is not None:
+            group_str = cr.Style.BRIGHT + "Git\n" + cr.Style.RESET_ALL
+            formatted += group_str
+            for (key, val) in git.items():
+                formatted += f" • {key}: {val}\n"
+        formatted += cr.Style.BRIGHT + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        formatted += cr.Style.RESET_ALL
+        return formatted.strip()
 
     def update(self, param_name, value):
         """
