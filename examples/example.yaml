@@ -1,20 +1,23 @@
-# Default
-metric: accuracy
-
-# Losses
-loss_fn: mse
-
-# Training
-batch_size: 2
-use_old_method: false
-
-# Model
-model_kwargs:
-  activation_fn: relu
-  dropout_prob: 0.0
-  input_dim: 2
-  output_dim: 5
-
-# Git
-branch: main
-commit: bdc3aed
+Default:
+  metric: accuracy
+Losses:
+  loss_fn: mse
+Training:
+  # Batch size for the training and validation data loaders.
+  batch_size: 16
+  use_old_method: false  # (deprecated)
+Model:
+  dropout_prob: 0.2
+  Encoder:
+    input_dim: 10
+    # Must be the same as Model.Decoder.input_dim
+    hidden_dim: 5
+  Decoder:
+    # Must be the same as
+    # Model.Encoder.hidden_dim
+    input_dim: 5
+    output_dim: 3
+Git:
+  branch: main
+  commit: 76d4a1c
+  url: https://github.com/jvasilakes/experiment-config.git

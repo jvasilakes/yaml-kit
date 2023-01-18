@@ -1,91 +1,126 @@
-from experiment_config import BaseConfig, parameter, deprecate, ConfigKeyError
+import os
+import argparse
+
+from experiment_config import Config
 
 
-class ExampleConfig(BaseConfig):
+config = Config("ExampleConfig")
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
-    @parameter(type=str)
-    def metric(self):
-        return self._metric
+@config.parameter(group="Losses")
+def loss_fn(val):
+    assert val in ["cross-entropy", "mse"]
 
-    @parameter(group="Losses")
-    def loss_fn(self):
-        assert self._loss_fn in ["cross-entropy", "mse"]
-        return self._loss_fn
 
-    @parameter(group="Training", default=2)
-    def batch_size(self):
-        assert isinstance(self._batch_size, int)
-        return self._batch_size
+@config.parameter(types=str)
+def metric(val):
+    pass
 
-    @deprecate()
-    @parameter(group="Training", default=False)
-    def use_old_method(self):
-        return self._use_old_method
 
-    @parameter(group="Model", default={"input_dim": 0,
-                                       "output_dim": 0,
-                                       "dropout_prob": 0.0,
-                                       "activation_fn": "relu"})
-    def model_kwargs(self):
-        """
-        This parameter showcases possible advanced usage.
-        """
-        type_map = {
-                "input_dim": int,
-                "output_dim": int,
-                "dropout_prob": float,
-                "activation_fn": str
-                }
-        valid_activation_fns = [
-                "relu",
-                "tanh",
-                "sigmoid"
-                ]
-        if "input_dim" not in self._model_kwargs.keys():
-            raise ConfigKeyError(f"Missing required key 'input_dim' to parameter model_kwargs")  # noqa
-        if "output_dim" not in self._model_kwargs.keys():
-            raise ConfigKeyError(f"Missing required key 'output_dim' to parameter model_kwargs")  # noqa
-        for (key, val) in self._model_kwargs.items():
-            try:
-                assert isinstance(val, type_map[key]), f"Expected value of type {type_map[key]} for key {key}. Got {type(val)}."  # noqa
-            except KeyError:
-                raise ValueError(f"Unsupported kwarg {key}.")
+@config.parameter(group="Training", default=2, types=int)
+def batch_size(val):
+    """
+    Docstrings will be saved into the config and printed
+    as comments in the yaml file.
+    """
+    assert val > 0
 
-        if "activation_fn" in self._model_kwargs:
-            assert self._model_kwargs["activation_fn"] in valid_activation_fns, f"activation_fn must be one of {valid_activation_fns}"  # noqa
-        else:
-            self._model_kwargs["activation_fn"] = \
-                    self.DEFAULT_PARAM_VALUES["model_kwargs"]["activation_fn"]
-        if "dropout_prob" in self._model_kwargs:
-            assert 0.0 <= self._model_kwargs["dropout_prob"] <= 1.0, f"dropout_prob must be in [0, 1]. Got {self._model_kwargs['dropout_prob']}"  # noqa
-        else:
-            self._model_kwargs["dropout_prob"] = \
-                    self.DEFAULT_PARAM_VALUES["model_kwargs"]["dropout_prob"]
 
-        return self._model_kwargs
+@config.parameter(group="Training", default=False, deprecated=True)
+def use_old_method(val):
+    pass
+
+
+@config.parameter(group="Model", default=0.0, types=float)
+def dropout_prob(val):
+    assert 0.0 <= val <= 1.0
+
+
+@config.parameter(group="Model.Encoder", default=5, types=int)
+def input_dim(val):
+    assert val > 0
+
+
+@config.parameter(group="Model.Encoder", default=5, types=int)
+def hidden_dim(val):
+    """
+    Must be the same as Model.Decoder.input_dim
+    """
+    assert val > 0
+
+
+# It's okay to overload a parameter name if they belong to different groups.
+@config.parameter(group="Model.Decoder", default=5, types=int)
+def input_dim(val):
+    """
+    Must be the same as Model.Encoder.hidden_dim
+    """
+    assert val > 0
+
+
+@config.parameter(group="Model.Decoder", default=5, types=int)
+def output_dim(val):
+    assert val > 0
+
+
+# The on_load decorator can be used to set restrictions
+# on combinations of parameters.
+@config.on_load
+def validate_parameters():
+    assert config.Model.Encoder.hidden_dim == config.Model.Decoder.input_dim
+
+
+# The following is an example of how you can create a command
+# line tool to work with config files.
+def update_config(filepath, **updates):
+    config.load_yaml(filepath)
+    for (key, value) in updates.items():
+        tmp = key.split('.')
+        group = '.'.join(tmp[:-1])
+        param = tmp[-1]
+        config.update(param, value, group=group)
+    os.rename(filepath, f"{filepath}.orig")
+    config.yaml(filepath)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command")
+
+    print_parser = subparsers.add_parser(
+        "print", help="Print a config file to the terminal.")
+    print_parser.add_argument("filepath", type=str,
+                              help="The yaml file to print.")
+
+    newconf_parser = subparsers.add_parser(
+        "new", help="Save a new default config file.")
+    newconf_parser.add_argument("filepath", type=str,
+                                help="Where to save the new config file.")
+
+    update_parser = subparsers.add_parser(
+        "update", help="Update one or more config files with new parameter values.")  # noqa
+    update_parser.add_argument("-p", "--param", nargs=2, action="append",
+                               help="E.g., -p Model.Encoder.input_dim 2")
+    update_parser.add_argument("-f", "--files", nargs='+', type=str,
+                               help="Config files to update.")
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    model_kwargs = {"input_dim": 2,
-                    "output_dim": 5,
-                    "activation_fn": "relu"}
-    config = ExampleConfig(metric="accuracy", loss_fn="mse",
-                           model_kwargs=model_kwargs)
-    print(config)
-    config.yaml("example.yaml")
+    args = parse_args()
 
-    config = ExampleConfig.from_yaml_file("example.yaml")
-    print()
-    print("From example.yaml")
-    print(config)
+    if args.command == "print":
+        config.load_yaml(args.filepath)
+        print(config)
 
-    config = ExampleConfig.from_yaml_file("example.yaml", batch_size=10,
-                                          thing="that")  # Invalid parameter
-    print()
-    print("From example.yaml with overridden kwargs")
-    print(config)
-    config.yaml("example_out.yaml")
-    print("Saved config to example_out.yaml")
+    elif args.command == "new":
+        config.yaml(args.filepath)
+
+    elif args.command == "update":
+        if args.param is None:
+            update_params = {}
+        else:
+            update_params = dict(args.param)
+        for filepath in args.files:
+            update_config(filepath, **update_params)

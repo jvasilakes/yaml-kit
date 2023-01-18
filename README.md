@@ -4,7 +4,7 @@ An extensible, flexible, and version-aware package for configuring and logging M
 
 ## Requirements
 
- * `pyyaml`
+ * `ruamel`
 
 
 ## Installation
@@ -22,4 +22,4 @@ python setup.py develop --uninstall
 
 ## Usage
 
-See the example in `example.py`.
+See the example in `examples/`.
