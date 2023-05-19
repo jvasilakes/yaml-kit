@@ -12,6 +12,7 @@ def update_config(config, filepath, **updates):
     Keys in updates use the dot syntax to specify groups, subgroups,
     and parameters. E.g., 'Group.Subgroup.parameter'.
     """
+    null_values = ["null", "none", '']
     # TODO: This will ignore errors that aren't set during the updates
     # so some non-updated parameters might still be incorrect.
     config.load_yaml(filepath, errors="ignore")
@@ -19,6 +20,8 @@ def update_config(config, filepath, **updates):
         tmp = key.split('.')
         group = '.'.join(tmp[:-1])
         param = tmp[-1]
+        if value.lower() in null_values:
+            value = None
         config.update(param, value, group=group)
     os.rename(filepath, f"{filepath}.orig")
     config.yaml(filepath)

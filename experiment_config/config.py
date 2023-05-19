@@ -120,17 +120,17 @@ class Parameter(object):
 
     def __init__(self, name, value=None, default=None, types=None,
                  validation=None, comment=None, deprecated=False):
-        self.name = name
+        self._name = name
         self._value = value
-        self.default = default
-        if self._value is None and self.default is not None:
-            self._value = self.default
-        self.types = types
-        self.validation = validation
-        self.comment = comment
-        self.deprecated = deprecated
-        if self.deprecated is True:
-            warnings.warn(f"Parameter '{self.name}' is deprecated.",
+        self._default = default
+        if self._value is None and self._default is not None:
+            self._value = self._default
+        self._types = types
+        self._validation = validation
+        self._comment = comment
+        self._deprecated = deprecated
+        if self._deprecated is True:
+            warnings.warn(f"Parameter '{self._name}' is deprecated.",
                           ParameterDeprecationWarning)
         if self.value is not None:
             self.validate()
@@ -149,22 +149,22 @@ class Parameter(object):
         Try to infer a default value of this parameter from
         its types.
         """
-        if self.default is not None:
-            return self.default
-        if self.types is None:
+        if self._default is not None:
+            return self._default
+        if self._types is None:
             return None
-        if isinstance(self.types, (tuple, list)):
-            t = self.types[0]
+        if isinstance(self._types, (tuple, list)):
+            t = self._types[0]
         else:
-            t = self.types
+            t = self._types
         return t()
 
     def validate(self):
-        if self.types is not None:
-            if not isinstance(self.value, self.types):
-                self.value = self._try_cast(self.value, self.types)
-        if self.validation is not None:
-            self.validation(self.value)
+        if self._types is not None:
+            if not isinstance(self.value, self._types):
+                self.value = self._try_cast(self.value, self._types)
+        if self._validation is not None:
+            self._validation(self.value)
 
     def _try_cast(self, value, types):
         """
@@ -185,7 +185,7 @@ class Parameter(object):
             except ValueError:
                 pass
         if casted is None:
-            raise ConfigTypeError(f"{self.name}: {self.value} ({type(self.value)}) not of type {self.types}./")  # noqa
+            raise ConfigTypeError(f"{self._name}: {self.value} ({type(self.value)}) not of type {self._types}./")  # noqa
         return casted
 
     def __eq__(self, other):
@@ -197,31 +197,42 @@ class Parameter(object):
         return self.pretty_print()
 
     def __repr__(self):
-        return f"Parameter({self.name}, value={self.value})"
+        return f"Parameter({self._name}, value={self.value})"
 
     def _pretty_print_comment(self, indent=0):
-        if self.comment is None:
+        if self._comment is None:
             return ''
         indent_str = ' ' * indent
-        lines = self.comment.split('\n')
+        lines = self._comment.split('\n')
         lines = [indent_str + f" # {line}" for line in lines]
-        return '\n'.join(lines) + '\n'
+        return cr.Fore.GREEN + '\n'.join(lines) + cr.Style.RESET_ALL + '\n'
 
     def pretty_print(self, indent=0):
         indent_str = ' ' * indent
         comment_str = self._pretty_print_comment(indent)
-        format_str = comment_str + indent_str + f" • {self.name}: {self.value}"
-        if self.deprecated is True:
-            format_str = cr.Fore.RED + format_str + " (deprecated)"
-            format_str += cr.Style.RESET_ALL
+        value_str = str(self.value)
+        # Where parameter values are simple dicts and not full-fledged
+        # ParameterGroups, we should still pretty print them.
+        if isinstance(self.value, dict):
+            value_str = str(dict())
+            if len(self.value) > 0:
+                sub_indent_str = ' ' * (indent + 3)
+                value_str = '\n'.join([sub_indent_str + f" - {key}: {val}"
+                                       for (key, val) in self.value.items()])
+                value_str = '\n' + value_str
+        data_str = indent_str + f" • {self._name}: {value_str}"
+        if self._deprecated is True:
+            data_str = cr.Fore.RED + data_str + " (deprecated)"
+            data_str += cr.Style.RESET_ALL
+        format_str = comment_str + data_str
         return format_str + '\n'
 
     def asdict(self, indent=0):
-        d = CommentedMap({self.name: self.value})
-        d.yaml_set_comment_before_after_key(self.name, before=self.comment,
-                                            indent=indent)
-        if self.deprecated is True:
-            d.yaml_add_eol_comment("(deprecated)", self.name)
+        d = CommentedMap({self._name: self.value})
+        d.yaml_set_comment_before_after_key(
+            self._name, before=self._comment, indent=indent)
+        if self._deprecated is True:
+            d.yaml_add_eol_comment("(deprecated)", self._name)
         return d
 
 
@@ -232,11 +243,12 @@ class ParameterGroup(object):
     :param str name: The name of this group.
     :param str comment: An optional comment.
     """
+    __reserved_names__ = ["_name", "_comment", "_members"]
 
     def __init__(self, name, comment=None):
-        self.name = name
-        self.comment = comment
-        self.members = []
+        self._name = name
+        self._comment = comment
+        self._members = []
 
     def add(self, param_or_group, index=None):
         """
@@ -246,22 +258,24 @@ class ParameterGroup(object):
             the group or parameter to add.
         :param int index: Where to add this element in the members list.
         """
-        if param_or_group.name in self.members:
-            raise KeyError(f"{param_or_group.name} already in group {self.name}.")  # noqa
+        if param_or_group._name in self._members:
+            raise KeyError(f"{param_or_group._name} already in group {self._name}.")  # noqa
         if index is not None:
-            self.members.insert(index, param_or_group.name)
+            self._members.insert(index, param_or_group._name)
         else:
-            self.members.append(param_or_group.name)
-        setattr(self, param_or_group.name, param_or_group)
+            self._members.append(param_or_group._name)
+        if param_or_group._name in self.__reserved_names__:
+            raise AttributeError(f"{param_or_group._name} is reserved. Please choose another name.")  # noqa
+        setattr(self, param_or_group._name, param_or_group)
 
     def __iter__(self):
-        for member in self.members:
+        for member in self._members:
             yield getattr(self, member)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        for this_member_name in self.members:
+        for this_member_name in self._members:
             this_member = getattr(self, this_member_name)
             that_member = getattr(other, this_member_name, None)
             if this_member != that_member:
@@ -269,17 +283,17 @@ class ParameterGroup(object):
         return True
 
     def __str__(self):
-        members_str = ','.join(self.members)
-        return f"ParameterGroup(name={self.name}, members={members_str})"
+        members_str = ','.join(self._members)
+        return f"ParameterGroup(name={self._name}, members={members_str})"
 
     def __repr__(self):
-        return f"ParameterGroup({self.name})"
+        return f"ParameterGroup({self._name})"
 
     def pretty_print(self, indent=0):
         formatted = ""
         indent_str = ' ' * indent
         group_str = cr.Style.BRIGHT + indent_str + \
-            f"{self.name}\n" + cr.Style.RESET_ALL
+            f"{self._name}\n" + cr.Style.RESET_ALL
         formatted += group_str
         for member in self:
             next_indent = indent
@@ -289,18 +303,18 @@ class ParameterGroup(object):
         return formatted
 
     def asdict(self, indent=0):
-        self_dict = CommentedMap({self.name: CommentedMap()})
+        self_dict = CommentedMap({self._name: CommentedMap()})
         self_dict.yaml_set_comment_before_after_key(
-            self.name, before=self.comment, indent=indent)
+            self._name, before=self._comment, indent=indent)
         for member in self:
             # update() doesn't preserve comments
             # and I can't set the ca attribute directly
             # so I have to go through _yaml_comment
             # It's very ugly.
             member_dict = member.asdict(indent=indent+2)
-            self_dict[self.name].update(member_dict)
-            if self_dict[self.name].ca is not None:
-                self_dict[self.name]._yaml_comment.items.update(
+            self_dict[self._name].update(member_dict)
+            if self_dict[self._name].ca is not None:
+                self_dict[self._name]._yaml_comment.items.update(
                     member_dict.ca.items)
         return self_dict
 
@@ -339,11 +353,11 @@ class Config(object):
     """
 
     def __init__(self, name):
-        self.name = name
-        self.GROUPS = []
-        self.git = ParameterGroup("Git")
+        self._name = name
+        self._GROUPS = []
+        self._git = ParameterGroup("Git")
         for (key, value) in self._git_info().items():
-            self.git.add(Parameter(key, value))
+            self._git.add(Parameter(key, value))
 
     def load_yaml(self, filepath, errors="raise"):
         """
@@ -364,7 +378,7 @@ class Config(object):
                                  structure as this Config instance.
         :param str errors: "raise" or "warn"
         """
-        for group_name in self.GROUPS:
+        for group_name in self._GROUPS:
             group = getattr(self, group_name)
             self._init_param_or_group(
                 group, check_default_values=True, **config_dict[group_name],
@@ -387,18 +401,18 @@ class Config(object):
             these_kwargs = kwargs
             for member in group:
                 if isinstance(member, ParameterGroup):
-                    these_kwargs = kwargs[member.name]
+                    these_kwargs = kwargs[member._name]
                 self._init_param_or_group(
                     member, check_default_values=check_default_values,
                     errors=errors, **these_kwargs)
         else:
             param = param_or_group
             try:
-                param.value = kwargs[param.name]
+                param.value = kwargs[param._name]
             except KeyError:
-                if param.default is None:
+                if param._default is None:
                     if check_default_values is True:
-                        err_str = f"Missing required parameter '{param.name}'."
+                        err_str = f"Missing required parameter '{param._name}'."  # noqa
                         if errors == "ignore":
                             pass
                         elif errors == "warn":
@@ -408,7 +422,7 @@ class Config(object):
                     else:
                         param._value = param.infer_default_value()
                 else:
-                    param.value = param.default
+                    param.value = param._default
             except AssertionError:
                 err_str = format_error_str()
                 if errors == "ignore":
@@ -487,10 +501,10 @@ class Config(object):
             group.add(param_or_group)
         elif isinstance(param_or_group, ParameterGroup):
             if index is not None:
-                self.GROUPS.insert(index, param_or_group.name)
+                self._GROUPS.insert(index, param_or_group._name)
             else:
-                self.GROUPS.append(param_or_group.name)
-            setattr(self, param_or_group.name, param_or_group)
+                self._GROUPS.append(param_or_group._name)
+            setattr(self, param_or_group._name, param_or_group)
 
     def update(self, param_name, new_value, group="Default"):
         """
@@ -509,14 +523,14 @@ class Config(object):
         self._post_load_hook()
 
     def __str__(self):
-        formatted = cr.Style.BRIGHT + self.name + '\n'
+        formatted = cr.Style.BRIGHT + self._name + '\n'
         formatted += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         formatted += cr.Style.RESET_ALL
-        for group_name in self.GROUPS:
+        for group_name in self._GROUPS:
             group = getattr(self, group_name)
             formatted += group.pretty_print()
-        if self.git is not None:
-            formatted += self.git.pretty_print()
+        if self._git is not None:
+            formatted += self._git.pretty_print()
         formatted += cr.Style.BRIGHT + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         formatted += cr.Style.RESET_ALL
         return formatted.strip()
@@ -536,7 +550,7 @@ class Config(object):
         Copy this Config instance.
         """
         new_instance = deepcopy(self)
-        new_instance.name = self.name + "-copy"
+        new_instance._name = self._name + "-copy"
         return new_instance
 
     def yaml(self, outpath=None):
@@ -558,7 +572,7 @@ class Config(object):
         Format this config as a dict.
         """
         config_dict = CommentedMap()
-        for group_name in self.GROUPS:
+        for group_name in self._GROUPS:
             group = getattr(self, group_name)
             config_dict.update(group.asdict())
         config_dict["Git"] = self._git_info()
