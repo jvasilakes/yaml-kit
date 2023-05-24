@@ -204,7 +204,7 @@ class Parameter(object):
             return ''
         indent_str = ' ' * indent
         lines = self._comment.split('\n')
-        lines = [indent_str + f" # {line}" for line in lines]
+        lines = [indent_str + f"   # {line}" for line in lines]
         return cr.Fore.GREEN + '\n'.join(lines) + cr.Style.RESET_ALL + '\n'
 
     def pretty_print(self, indent=0):
