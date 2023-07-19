@@ -162,7 +162,7 @@ class Parameter(object):
     def validate(self):
         if self._types is not None:
             if not isinstance(self.value, self._types):
-                self.value = self._try_cast(self.value, self._types)
+                self._value = self._try_cast(self.value, self._types)
         if self._validation is not None:
             self._validation(self.value)
 
@@ -181,7 +181,17 @@ class Parameter(object):
         casted = None
         for typ in types:
             try:
-                casted = typ(value)
+                # So we don't end up with "None"
+                if value is None:
+                    casted = typ()
+                else:
+                    if typ is bool:
+                        if value.title() in ["True", "False"]:
+                            casted = eval(value.title())
+                        else:
+                            raise ValueError()
+                    else:
+                        casted = typ(value)
             except ValueError:
                 pass
         if casted is None:
@@ -519,7 +529,8 @@ class Config(object):
         for name in group_names:
             current_group = getattr(current_group, name)
         param = getattr(current_group, param_name)
-        param.value = new_value
+        param._value = new_value
+        param.validate()
         self._post_load_hook()
 
     def __str__(self):
