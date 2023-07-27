@@ -1,4 +1,5 @@
 import os
+import re
 import argparse
 
 from ruamel.yaml import YAML
@@ -22,8 +23,11 @@ def update_config(config, filepath, **updates):
         param = tmp[-1]
         if value.lower() in null_values:
             value = None
+        if '{}' in value:
+            curr_val = config[key].value
+            value = re.sub("{}", curr_val, value)
         config.update(param, value, group=group, validate=False)
-    # TODO: This is a bit of a hack.
+    # TODO: This is a bit of a hack, to call _post_load_hook directly.
     config._post_load_hook()
     os.rename(filepath, f"{filepath}.orig")
     config.yaml(filepath)
@@ -50,10 +54,16 @@ def parse_args():
 
     update_parser = subparsers.add_parser(
         "update", help="Update one or more config files with new parameter values.")  # noqa
-    update_parser.add_argument("-p", "--param", nargs=2, action="append",
-                               help="E.g., -p Model.Encoder.input_dim 2")
-    update_parser.add_argument("-f", "--files", nargs='+', type=str,
-                               help="Config files to update.")
+    update_parser.add_argument(
+        "-p", "--param", nargs=2, metavar=("GROUP.PARAM", "VALUE"),
+        action="append",
+        help="""Update PARAM in GROUP with a new VALUE.
+        E.g., -p Model.Encoder.input_dim 2
+        The string '{}' is replaced with the current VALUE.
+        E.g., -p Experiment.name "{}_new"
+        will append "_new" to the current experiment name.""")
+    update_parser.add_argument("-f", "--files", nargs='+', metavar="FILE",
+                               type=str, help="Config files to update.")
 
     return parser.parse_args()
 

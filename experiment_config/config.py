@@ -559,6 +559,13 @@ class Config(object):
                 return False
         return True
 
+    def __getitem__(self, key):
+        group_names = key.split('.')
+        rval = self
+        for name in group_names:
+            rval = getattr(rval, name)
+        return rval
+
     def copy(self):
         """
         Copy this Config instance.

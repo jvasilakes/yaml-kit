@@ -4,14 +4,19 @@ from experiment_config import Config, get_and_run_config_command
 config = Config("ExampleConfig")
 
 
-@config.parameter(group="Losses")
-def loss_fn(val):
-    assert val in ["cross-entropy", "mse"]
+@config.parameter(types=str, default="Example")
+def name(val):
+    pass
 
 
 @config.parameter(types=str)
 def metric(val):
     assert val in ["accuracy", "f1"]
+
+
+@config.parameter(group="Losses")
+def loss_fn(val):
+    assert val in ["cross-entropy", "mse"]
 
 
 @config.parameter(group="Training", default=2, types=int)

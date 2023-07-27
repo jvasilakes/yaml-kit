@@ -1,4 +1,5 @@
 Default:
+  name: Example
   metric: accuracy
 Losses:
   loss_fn: mse
@@ -19,5 +20,5 @@ Model:
     output_dim: 3
 Git:
   branch: main
-  commit: 57ab46b
+  commit: b11eea5
   url: https://github.com/jvasilakes/experiment-config.git
