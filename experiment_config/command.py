@@ -22,7 +22,9 @@ def update_config(config, filepath, **updates):
         param = tmp[-1]
         if value.lower() in null_values:
             value = None
-        config.update(param, value, group=group)
+        config.update(param, value, group=group, validate=False)
+    # TODO: This is a bit of a hack.
+    config._post_load_hook()
     os.rename(filepath, f"{filepath}.orig")
     config.yaml(filepath)
 

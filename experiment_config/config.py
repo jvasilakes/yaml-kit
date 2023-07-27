@@ -516,13 +516,15 @@ class Config(object):
                 self._GROUPS.append(param_or_group._name)
             setattr(self, param_or_group._name, param_or_group)
 
-    def update(self, param_name, new_value, group="Default"):
+    def update(self, param_name, new_value, group="Default", validate=True):
         """
         Update the value of param_name under the specified group.
 
         :param str param_name: The name of the Parameter whose value to update.
         :param Any new_value: The new value of this Parameter.
         :param str group: This Parameter's group. Can use the dot '.' syntax.
+        :param bool validate: (Optional) Validate this config with the new
+            parameter value via _post_load_hook(). Default True.
         """
         group_names = group.split('.')
         current_group = self
@@ -531,7 +533,8 @@ class Config(object):
         param = getattr(current_group, param_name)
         param._value = new_value
         param.validate()
-        self._post_load_hook()
+        if validate is True:
+            self._post_load_hook()
 
     def __str__(self):
         formatted = cr.Style.BRIGHT + self._name + '\n'
