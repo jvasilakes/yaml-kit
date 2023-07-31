@@ -411,7 +411,10 @@ class Config(object):
             these_kwargs = kwargs
             for member in group:
                 if isinstance(member, ParameterGroup):
-                    these_kwargs = kwargs[member._name]
+                    try:
+                        these_kwargs = kwargs[member._name]
+                    except KeyError:
+                        these_kwargs = {}
                 self._init_param_or_group(
                     member, check_default_values=check_default_values,
                     errors=errors, **these_kwargs)
