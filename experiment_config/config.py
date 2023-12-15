@@ -609,15 +609,17 @@ class Config(object):
         with os.popen("git log --pretty=format:'%h' -n 1") as p:
             commit = p.read().strip()
         with os.popen("git remote -v | tail -n 1") as p:
-            url = p.read().strip().split()[1]
+            url = p.read().strip().split()
         if branch == '':
             branch = None
         if commit == '':
             commit = None
-        if url == '':
+        if url == []:
             url = None
+        else:
+            url = url[1]
         if None in (branch, commit, url):
             warnings.warn("Error getting current git information. Are you in a git repo?",  # noqa
                           ConfigWarning)
-            return None
+            return {}
         return {"branch": branch, "commit": commit, "url": url}
