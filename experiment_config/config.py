@@ -342,13 +342,13 @@ class Config(object):
 
         myconfig = Config("MyConfig")
 
-        @myconfig.parameter(group="Foo/Bar", types=int, default=50)
+        @myconfig.parameter(group="Group.Subgroup", types=int, default=50)
         def parameter1(value):
             # Add any initialization/validation code here
             assert value > 0
             assert value < 90
 
-        @myconfig.parameter(group="Foo/Bar", types=int, default=60)
+        @myconfig.parameter(group="Group.Subgroup", types=int, default=60)
         def parameter2(value):
             # Add any initialization/validation code here
             assert value > 10
@@ -358,8 +358,8 @@ class Config(object):
         def validate_parameters(myconfig):
             assert myconfig.parameter2 == myconfig.parameter1 + 10
 
-        myconfig.Foo.Bar.parameter1  # prints 50 (the default)
-        myconfig.Foo.Bar.parameter2  # prints 60 (the default)
+        myconfig.Group.Subgroup.parameter1  # prints 50 (the default)
+        myconfig.Group.Subgroup.parameter2  # prints 60 (the default)
     """
 
     def __init__(self, name):
@@ -568,6 +568,11 @@ class Config(object):
         for name in group_names:
             rval = getattr(rval, name)
         return rval
+
+    def __iter__(self):
+        for group_name in self._GROUPS:
+            group = getattr(self, group_name)
+            yield group
 
     def copy(self):
         """
