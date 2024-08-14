@@ -24,7 +24,7 @@ def update_config(config, filepath, **updates):
             if '{}' in value:
                 curr_val = config[key].value
                 value = modify_path_value(curr_val, value)  # value is a pattern
-        config.update(param, value, group=group, validate=False)
+        config.update(param, value, group=group, run_on_load=False)
     # TODO: This is a bit of a hack, to call _post_load_hook directly.
     config._post_load_hook()
     os.rename(filepath, f"{filepath}.orig")
