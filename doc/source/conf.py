@@ -20,13 +20,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'experiment_config'
-copyright = '2022, Jake Vasilakes'
+copyright = '2023, Jake Vasilakes'
 author = 'Jake Vasilakes'
 
 # The short X.Y version
-version = ''
+version = '0.2'
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.2.0beta'
 
 
 # -- General configuration ---------------------------------------------------

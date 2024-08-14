@@ -8,6 +8,6 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(name="experiment_config",
       version="0.1.0",
-      description="A tool managing config files for ML experiments.",
+      description="A YAML-based tool for managing config files for ML experiments.",  # noqa
       long_description=long_description,
       packages=find_packages())

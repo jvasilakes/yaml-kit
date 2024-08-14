@@ -1,0 +1,16 @@
+Experiment:
+  name: my experiment
+Model:
+  Encoder:
+    input_dim: 10
+    output_dim: 5
+  Decoder:
+    input_dim: 5
+    output_dim: 3
+    shape:  # (deprecated)
+    - 5
+    - 3
+Git:
+  branch: main
+  commit: '5169643'
+  url: https://github.com/jvasilakes/experiment-config.git

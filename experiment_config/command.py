@@ -1,8 +1,5 @@
 import os
-import re
 import argparse
-
-from ruamel.yaml import YAML
 
 
 def update_config(config, filepath, **updates):
@@ -23,14 +20,32 @@ def update_config(config, filepath, **updates):
         param = tmp[-1]
         if value.lower() in null_values:
             value = None
-        if '{}' in value:
-            curr_val = config[key].value
-            value = re.sub("{}", curr_val, value)
+        if value is not None:
+            if '{}' in value:
+                curr_val = config[key].value
+                value = modify_path_value(curr_val, value)  # value is a pattern
         config.update(param, value, group=group, validate=False)
     # TODO: This is a bit of a hack, to call _post_load_hook directly.
     config._post_load_hook()
     os.rename(filepath, f"{filepath}.orig")
     config.yaml(filepath)
+
+
+def modify_path_value(current_value, pattern):
+    path_head = current_value
+    patt_head = pattern
+    tail = ''
+    while path_head != '':
+        patt_head, patt_tail = os.path.split(patt_head)
+        if patt_tail == '{}':
+            path_head, path_tail = os.path.split(path_head)
+            tail = os.path.join(path_tail, tail)
+        else:
+            tail = os.path.join(patt_tail, tail)
+        if patt_head == '':
+            tail = os.path.join(path_head, tail)
+            break
+    return tail
 
 
 def parse_args():
@@ -58,10 +73,10 @@ def parse_args():
         "-p", "--param", nargs=2, metavar=("GROUP.PARAM", "VALUE"),
         action="append",
         help="""Update PARAM in GROUP with a new VALUE.
-        E.g., -p Model.Encoder.input_dim 2
-        The string '{}' is replaced with the current VALUE.
-        E.g., -p Experiment.name "{}_new"
-        will append "_new" to the current experiment name.""")
+        E.g., `-p Model.Encoder.input_dim 2`. Pattern matching on paths
+        is supported using '{}' and '/'. E.g., if the current VALUE is
+        'log/path' `-p Experiment.logdir {}/new/{}` will update it to
+        'log/new/path'.""")
     update_parser.add_argument("-f", "--files", nargs='+', metavar="FILE",
                                type=str, help="Config files to update.")
 

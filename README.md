@@ -4,7 +4,9 @@ An extensible, flexible, and version-aware package for configuring and logging M
 
 ## Requirements
 
- * `ruamel`
+ * `ruamel.yaml`
+ * `colorama`
+
 
 
 ## Installation
