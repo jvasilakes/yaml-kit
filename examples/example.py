@@ -71,6 +71,10 @@ def output_dim(val):
 def validate_parameters():
     assert config.Model.Encoder.hidden_dim == config.Model.Decoder.input_dim
 
+@config.on_load
+def modify_parameter():
+    config.Model.dropout_prob.value = 0.5
+
 
 if __name__ == "__main__":
     get_and_run_config_command(config)

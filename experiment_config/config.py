@@ -370,6 +370,7 @@ class Config(object):
     def __init__(self, name):
         self._name = name
         self._GROUPS = []
+        self._post_load_hooks = []
         self._git = ParameterGroup("Git")
         for (key, value) in self._git_info().items():
             self._git.add(Parameter(key, value))
@@ -454,7 +455,8 @@ class Config(object):
         """
         Can be overridden using the on_load decorator. See usage.
         """
-        pass
+        for hook in self._post_load_hooks:
+            hook()
 
     def parameter(self, group="Default", default=None, types=None,
                   deprecated=False):
@@ -499,7 +501,7 @@ class Config(object):
         A decorator for setting a function to run after loading a config
         with load_yaml or load_dict. See usage for Config.
         """
-        self._post_load_hook = func
+        self._post_load_hooks.append(func)
 
     def add(self, param_or_group, index=None):
         """
