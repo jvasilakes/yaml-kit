@@ -17,13 +17,15 @@ An extensible, flexible, and version-aware package for configuring and logging M
 ## Installation
 
 ```
-$> python setup.py develop
+git clone https://github.com/jvasilakes/experiment-config.git
+cd experiment_config
+python setup.py develop
 ```
 
 ### Uninstallation
 
 ```
-$> python setup.py develop --uninstall
+python setup.py develop --uninstall
 ```
 
 
