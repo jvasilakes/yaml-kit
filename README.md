@@ -17,15 +17,7 @@ An extensible, flexible, and version-aware package for configuring and logging M
 ## Installation
 
 ```
-git clone https://github.com/jvasilakes/experiment-config.git
-cd experiment_config
-python setup.py develop
-```
-
-### Uninstallation
-
-```
-python setup.py develop --uninstall
+pip install experiment_config
 ```
 
 
