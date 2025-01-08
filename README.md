@@ -1,11 +1,11 @@
-# Experiment Config
+# YAML-kit
 
-An extensible, flexible, and version-aware package for configuring and logging ML experiments.
+Customizable, extensible, and version-aware YAML configuration. 
 
 
 ## Description
 
-`experiment_config` is a programmatic way to generate and validate YAML config files with custom, user-defined logic. It supports comments, type checking, and git integration so you always know that your experiments are valid, and you can check how parameter values have changed through code iterations.
+`yaml-kit` is a programmatic way to generate and validate YAML config files with custom, user-defined logic. It supports comments, type checking, and git integration so you always know that your files are valid for your use case, and you can check how parameter values have changed through code iterations.
 
 ## Requirements
 
@@ -17,16 +17,16 @@ An extensible, flexible, and version-aware package for configuring and logging M
 ## Installation
 
 ```
-pip install experiment_config
+pip install yaml-kit
 ```
 
 
 ## Usage
 
-At a high level, `experiment_config` helps you generate and read YAML files. It always starts with creating a `.py` file to define the parameters. This file always has the same basic structure:
+At a high level, `yaml-kit` helps you generate and read YAML files. It always starts with creating a `.py` file to define the parameters. This file always has the same basic structure:
 
 ```python
-from experiment_config import Config, get_and_run_config_command
+from yaml_kit import Config, get_and_run_config_command
 
 config = Config("MyConfig")
 
