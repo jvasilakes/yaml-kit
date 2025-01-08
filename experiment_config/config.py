@@ -130,7 +130,7 @@ class Parameter(object):
         self._comment = comment
         self._deprecated = deprecated
         if self._deprecated is True:
-            warnings.warn(f"Parameter '{self._name}' is deprecated.",
+            warnings.warn(f"Config parameter '{self._name}' is deprecated.",
                           ParameterDeprecationWarning)
         if self.value is not None:
             self.validate()
