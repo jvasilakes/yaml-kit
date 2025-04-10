@@ -1,4 +1,4 @@
-from experiment_config import Config, get_and_run_config_command
+from yaml_kit import Config, get_and_run_config_command
 
 
 config = Config("ExampleConfig")

@@ -337,13 +337,13 @@ class ParameterGroup(object):
 class Config(object):
 
     """
-    The base experiment config class, which is used to create your own config.
+    The base config class, which is used to create your own config.
     The keyword arguments used to initialize
     your subclass are those methods which you decorate with @parameter.
 
     .. code-block:: python
 
-        from experiment_config import Config
+        from yaml_kit import Config
 
         myconfig = Config("MyConfig")
 
