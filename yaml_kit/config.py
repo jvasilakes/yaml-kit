@@ -181,8 +181,12 @@ class Parameter(object):
 
     def validate(self):
         if self._types is not None:
-            if not isinstance(self.value, self._types):
-                self._value = self._try_cast(self.value, self._types)
+            if not isinstance(self._types, (tuple, list)):
+                types = [self._types]
+            else:
+                types = self._types
+            if type(self.value) not in types:
+                self._value = self._try_cast(self.value, types)
         if self._validation is not None:
             self._validation(self.value)
 
@@ -194,10 +198,8 @@ class Parameter(object):
         :param (tuple, type) types: A type or tuple of types.
         :returns: The cast value or None if casting failed.
         """
-        if isinstance(value, types):
+        if type(value) in types:
             return value
-        if not isinstance(types, (tuple, list)):
-            types = [types]
         casted = None
         for typ in types:
             try:
