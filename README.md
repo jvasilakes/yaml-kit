@@ -81,7 +81,7 @@ The validation logic in the parameter functions is often sufficient. However, if
 ```python
 @config.on_load
 def validate_parameters():
-    assert Model.Encoder.output_dim == Model.Decoder.input_dim
+    assert config.Model.Encoder.output_dim == config.Model.Decoder.input_dim
 ```
 
 ### Command Line Usage
