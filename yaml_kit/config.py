@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import warnings
@@ -645,7 +646,9 @@ class Config(object):
         :param str outpath: (Optional) Where to save the yaml file.
         """
         if outpath is None:
-            yaml.dump(self.asdict(), sys.stdout)
+            buf = io.BytesIO()
+            yaml.dump(self.asdict(), buf)
+            return buf.getvalue().decode("utf8")
         else:
             with open(outpath, "w") as outF:
                 yaml.dump(self.asdict(), outF)
