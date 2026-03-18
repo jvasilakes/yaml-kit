@@ -431,11 +431,22 @@ class Config(object):
         """
         for group_name in self._GROUPS:
             group = getattr(self, group_name)
+            try:
+                kwargs = config_dict[group_name]
+            except KeyError:
+                err_str = format_error_str()
+                if errors == "ignore":
+                    kwargs = {}
+                elif errors == "warn":
+                    warnings.warn(err_str, ConfigAssertionWarning)
+                    kwargs = {}
+                else:
+                    raise ConfigKeyError(err_str)
             self._init_param_or_group(
                 group,
                 check_default_values=True,
-                **config_dict[group_name],
                 errors=errors,
+                **kwargs,
             )
         try:
             self._post_load_hook()
