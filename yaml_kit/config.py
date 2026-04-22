@@ -319,6 +319,19 @@ class Parameter(object):
     def __repr__(self):
         return f"Parameter({self._name}, value={self.value})"
 
+    # Iterables
+    def __iter__(self):
+        return iter(self.value)  # for x in param
+
+    def __len__(self):
+        return len(self.value)  # len(param)
+
+    def __getitem__(self, key):
+        return self.value[key]  # param[0], param[1:3]
+
+    def __contains__(self, item):
+        return self._unwrap(item) in self.value
+
 
 class ParameterGroup(object):
     """
