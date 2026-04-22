@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A package for creating and modifying YAML files."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.8,<=3.14"
 dependencies = [
   "colorama",
   "ruamel.yaml",
@@ -20,6 +20,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=6.2.0"
+sphinx-rtd-theme = ">=1.0.0"
 
 [project.urls]
 Homepage = "https://github.com/jvasilakes/experiment-config"
