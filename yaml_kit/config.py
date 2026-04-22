@@ -223,17 +223,6 @@ class Parameter(object):
             )  # noqa
         return casted
 
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.value == other.value
-
-    def __str__(self):
-        return self.pretty_print()
-
-    def __repr__(self):
-        return f"Parameter({self._name}, value={self.value})"
-
     def _pretty_print_comment(self, indent=0):
         if self._comment is None:
             return ""
@@ -274,6 +263,58 @@ class Parameter(object):
         if self._deprecated is True:
             d.yaml_add_eol_comment("(deprecated)", self._name)
         return d
+
+    # Override dunder methods so this acts just like its value.
+    # Arithmetic
+    def __add__(self, other):
+        return self.value + other
+
+    def __radd__(self, other):
+        return other + self.value
+
+    def __sub__(self, other):
+        return self.value - other
+
+    def __rsub__(self, other):
+        return other - self.value
+
+    def __mul__(self, other):
+        return self.value * other
+
+    def __rmul__(self, other):
+        return other * self.value
+
+    def __truediv__(self, other):
+        return self.value / other
+
+    # Comparison
+    def __eq__(self, other):
+        return self.value == other
+
+    def __lt__(self, other):
+        return self.value < other
+
+    def __le__(self, other):
+        return self.value <= other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    # Representation
+    def __int__(self):
+        return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+    def __bool__(self):
+        return bool(self.value)
+
+    def __str__(self):
+        return self.pretty_print()
+
+    def __repr__(self):
+        return f"Parameter({self._name}, value={self.value})"
 
 
 class ParameterGroup(object):
