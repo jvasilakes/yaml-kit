@@ -264,41 +264,44 @@ class Parameter(object):
             d.yaml_add_eol_comment("(deprecated)", self._name)
         return d
 
+    def _unwrap(self, other):
+        return other.value if isinstance(other, Parameter) else other
+
     # Override dunder methods so this acts just like its value.
     # Arithmetic
     def __add__(self, other):
-        return self.value + other
+        return self.value + self._unwrap(other)
 
     def __radd__(self, other):
-        return other + self.value
+        return self._unwrap(other) + self.value
 
     def __sub__(self, other):
-        return self.value - other
+        return self.value - self._unwrap(other)
 
     def __rsub__(self, other):
-        return other - self.value
+        return self._unwrap(other) - self.value
 
     def __mul__(self, other):
-        return self.value * other
+        return self.value * self._unwrap(other)
 
     def __rmul__(self, other):
-        return other * self.value
+        return self._unwrap(other) * self.value
 
     def __truediv__(self, other):
-        return self.value / other
+        return self.value / self._unwrap(other)
 
     # Comparison
     def __eq__(self, other):
-        return self.value == other
+        return self.value == self._unwrap(other)
 
     def __lt__(self, other):
-        return self.value < other
+        return self.value < self._unwrap(other)
 
     def __le__(self, other):
-        return self.value <= other
+        return self.value <= self._unwrap(other)
 
     def __gt__(self, other):
-        return self.value > other
+        return self.value > self._unwrap(other)
 
     # Representation
     def __int__(self):
