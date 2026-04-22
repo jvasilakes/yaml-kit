@@ -1,24 +1,16 @@
-Default:
-  name: Example
-  metric: accuracy
-Losses:
-  loss_fn: mse
-Training:
-  # Docstrings will be saved into the config and printed
-  # as comments in the yaml file.
-  batch_size: 16
-  use_old_method: false  # (deprecated)
+Experiment:
+  name: my experiment
 Model:
-  dropout_prob: 0.2
   Encoder:
     input_dim: 10
-    # Must be the same as Model.Decoder.input_dim
-    hidden_dim: 5
+    output_dim: 5
   Decoder:
-    # Must be the same as Model.Encoder.hidden_dim
     input_dim: 5
     output_dim: 3
+    shape:  # (deprecated)
+    - 5
+    - 3
 Git:
   branch: main
-  commit: b11eea5
+  commit: '5169643'
   url: https://github.com/jvasilakes/yaml-kit.git
