@@ -660,8 +660,16 @@ class Config(object):
         group_names = group.split(".")
         current_group = self
         for name in group_names:
-            current_group = getattr(current_group, name)
-        param = getattr(current_group, param_name)
+            try:
+                current_group = getattr(current_group, name)
+            except AttributeError:
+                msg = f"{repr(current_group)} has no group {name}"
+                raise AttributeError(msg)
+        try:
+            param = getattr(current_group, param_name)
+        except AttributeError:
+            msg = f"{repr(current_group)} has no parameter {param_name}"
+            raise AttributeError(msg)
         param._value = new_value
         param.validate()
         if run_on_load is True:
@@ -698,6 +706,9 @@ class Config(object):
         return rval
 
     def __iter__(self):
+        """
+        Iterate over this config's groups.
+        """
         for group_name in self._GROUPS:
             group = getattr(self, group_name)
             yield group
