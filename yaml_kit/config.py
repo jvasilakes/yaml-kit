@@ -267,6 +267,11 @@ class Parameter(object):
     def _unwrap(self, other):
         return other.value if isinstance(other, Parameter) else other
 
+    def __getattr__(self, name):
+        # Python only calls this as a backup *after* looking for
+        # name in self.__dict__, so it's safe.
+        return getattr(self.value, name)
+
     # Override dunder methods so this acts just like its value.
     # Arithmetic
     def __add__(self, other):
