@@ -684,7 +684,9 @@ class Config(object):
             self._post_load_hook()
 
     def print_help(self):
-        formatted = self._name + "\n"
+        formatted = cr.Style.BRIGHT + self._name + "\n"
+        formatted += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        formatted += cr.Style.RESET_ALL
         for group_name in self._GROUPS:
             group = getattr(self, group_name)
             formatted += group.pretty_print(print_help=True)
