@@ -481,6 +481,8 @@ class Config(object):
         """
         with open(filepath, "r") as inF:
             config_dict = yaml.load(inF)
+        if config_dict is None:
+            raise ConfigError(f"{filepath} does not exist or is empty.")
         self.load_dict(config_dict, errors=errors)
 
     def load_dict(self, config_dict, errors="raise"):
