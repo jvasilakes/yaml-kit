@@ -191,37 +191,37 @@ class Parameter(object):
         if self._validation is not None:
             self._validation(self.value)
 
-    def _try_cast(self, value, types):
-        """
-        Try to cast value as one of types.
+        def _try_cast(self, value, types):
+            """
+            Try to cast value as one of types.
 
-        :param Any value: The value to try to cast
-        :param (tuple, type) types: A type or tuple of types.
-        :returns: The cast value or None if casting failed.
-        """
-        if type(value) in types:
-            return value
-        casted = None
-        for typ in types:
-            try:
-                # So we don't end up with "None"
-                if value is None:
-                    casted = typ()
-                else:
-                    if typ is bool:
-                        if value.title() in ["True", "False"]:
-                            casted = eval(value.title())
-                        else:
-                            raise ValueError()
+            :param Any value: The value to try to cast
+            :param (tuple, type) types: A type or tuple of types.
+            :returns: The cast value or None if casting failed.
+            """
+            if type(value) in types:
+                return value
+            casted = None
+            for typ in types:
+                try:
+                    # So we don't end up with "None"
+                    if value is None:
+                        casted = typ()
                     else:
-                        casted = typ(value)
-            except ValueError:
-                pass
-        if casted is None:
-            raise ConfigTypeError(
-                f"{self._name}: {self.value} ({type(self.value)}) not of type {self._types}./"
-            )  # noqa
-        return casted
+                        if typ is bool:
+                            if value.title() in ["True", "False"]:
+                                casted = eval(value.title())
+                            else:
+                                raise ValueError()
+                        else:
+                            casted = typ(value)
+                except ValueError:
+                    pass
+            if casted is None:
+                raise ConfigTypeError(
+                    f"{self._name}: {self.value} ({type(self.value)}) not of type {self._types}./"
+                )  # noqa
+            return casted
 
     def _pretty_print_comment(self, indent=0):
         if self._comment is None:
@@ -231,23 +231,26 @@ class Parameter(object):
         lines = [indent_str + f"   # {line}" for line in lines]
         return cr.Fore.GREEN + "\n".join(lines) + cr.Style.RESET_ALL + "\n"
 
-    def pretty_print(self, indent=0):
+    def pretty_print(self, indent=0, help_only=False):
         indent_str = " " * indent
         comment_str = self._pretty_print_comment(indent)
-        value_str = str(self.value)
-        # Where parameter values are simple dicts and not full-fledged
-        # ParameterGroups, we should still pretty print them.
-        if isinstance(self.value, dict):
-            value_str = str(dict())
-            if len(self.value) > 0:
-                sub_indent_str = " " * (indent + 3)
-                value_str = "\n".join(
-                    [
-                        sub_indent_str + f" - {key}: {val}"
-                        for (key, val) in self.value.items()
-                    ]
-                )
-                value_str = "\n" + value_str
+        if help_only is True:
+            value_str = f"{str(self._types)} (Default: {self._default})"
+        else:
+            value_str = str(self.value)
+            # Where parameter values are simple dicts and not full-fledged
+            # ParameterGroups, we should still pretty print them.
+            if isinstance(self.value, dict):
+                value_str = str(dict())
+                if len(self.value) > 0:
+                    sub_indent_str = " " * (indent + 3)
+                    value_str = "\n".join(
+                        [
+                            sub_indent_str + f" - {key}: {val}"
+                            for (key, val) in self.value.items()
+                        ]
+                    )
+                    value_str = "\n" + value_str
         data_str = indent_str + f" • {self._name}: {value_str}"
         if self._deprecated is True:
             data_str = cr.Fore.RED + data_str + " (deprecated)"
@@ -401,7 +404,7 @@ class ParameterGroup(object):
     def __repr__(self):
         return f"ParameterGroup({self._name})"
 
-    def pretty_print(self, indent=0):
+    def pretty_print(self, indent=0, print_help=False):
         formatted = ""
         indent_str = " " * indent
         group_str = (
@@ -412,7 +415,10 @@ class ParameterGroup(object):
             next_indent = indent
             if isinstance(member, ParameterGroup):
                 next_indent += 1
-            formatted += member.pretty_print(indent=next_indent)
+            if print_help is True:
+                formatted += member.pretty_print(indent=next_indent, help_only=True)
+            else:
+                formatted += member.pretty_print(indent=next_indent)
         return formatted
 
     def asdict(self, indent=0):
@@ -676,6 +682,13 @@ class Config(object):
         param.validate()
         if run_on_load is True:
             self._post_load_hook()
+
+    def print_help(self):
+        formatted = self._name + "\n"
+        for group_name in self._GROUPS:
+            group = getattr(self, group_name)
+            formatted += group.pretty_print(print_help=True)
+        print(formatted.strip())
 
     def __str__(self):
         formatted = cr.Style.BRIGHT + self._name + "\n"

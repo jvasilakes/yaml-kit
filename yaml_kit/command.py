@@ -91,6 +91,11 @@ def parse_args():
         help="Config files to update.",
     )
 
+    help_parser = subparsers.add_parser(
+        "help",
+        help="Print help for a config file.",
+    )
+
     return parser.parse_args()
 
 
@@ -112,6 +117,9 @@ def run_command(config, args):
             update_params = dict(args.param)
         for filepath in args.files:
             update_config(config, filepath, **update_params)
+
+    elif args.command == "help":
+        config.print_help()
 
 
 def get_and_run_config_command(config):
