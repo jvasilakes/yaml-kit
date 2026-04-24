@@ -191,37 +191,37 @@ class Parameter(object):
         if self._validation is not None:
             self._validation(self.value)
 
-        def _try_cast(self, value, types):
-            """
-            Try to cast value as one of types.
+    def _try_cast(self, value, types):
+        """
+        Try to cast value as one of types.
 
-            :param Any value: The value to try to cast
-            :param (tuple, type) types: A type or tuple of types.
-            :returns: The cast value or None if casting failed.
-            """
-            if type(value) in types:
-                return value
-            casted = None
-            for typ in types:
-                try:
-                    # So we don't end up with "None"
-                    if value is None:
-                        casted = typ()
-                    else:
-                        if typ is bool:
-                            if value.title() in ["True", "False"]:
-                                casted = eval(value.title())
-                            else:
-                                raise ValueError()
+        :param Any value: The value to try to cast
+        :param (tuple, type) types: A type or tuple of types.
+        :returns: The cast value or None if casting failed.
+        """
+        if type(value) in types:
+            return value
+        casted = None
+        for typ in types:
+            try:
+                # So we don't end up with "None"
+                if value is None:
+                    casted = typ()
+                else:
+                    if typ is bool:
+                        if value.title() in ["True", "False"]:
+                            casted = eval(value.title())
                         else:
-                            casted = typ(value)
-                except ValueError:
-                    pass
-            if casted is None:
-                raise ConfigTypeError(
-                    f"{self._name}: {self.value} ({type(self.value)}) not of type {self._types}./"
-                )  # noqa
-            return casted
+                            raise ValueError()
+                    else:
+                        casted = typ(value)
+            except ValueError:
+                pass
+        if casted is None:
+            raise ConfigTypeError(
+                f"{self._name}: {self.value} ({type(self.value)}) not of type {self._types}./"
+            )  # noqa
+        return casted
 
     def _pretty_print_comment(self, indent=0):
         if self._comment is None:
