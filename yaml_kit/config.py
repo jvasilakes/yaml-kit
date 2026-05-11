@@ -574,6 +574,23 @@ class Config(object):
                 else:
                     raise ConfigAssertionError(err_str)
 
+    def reset(self):
+        """
+        Resets this config to default values.
+        """
+        for group_name in self._GROUPS:
+            group = getattr(self, group_name)
+            self._reset_param_or_group(group)
+
+    def _reset_param_or_group(self, param_or_group):
+        if isinstance(param_or_group, ParameterGroup):
+            group = param_or_group
+            for member in group:
+                self._reset_param_or_group(member)
+        else:
+            param = param_or_group
+            param._value = param._default or param.infer_default_value()
+
     def _post_load_hook(self):
         """
         Can be overridden using the on_load decorator. See usage.
