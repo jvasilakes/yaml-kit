@@ -213,6 +213,8 @@ class Parameter(object):
                             casted = eval(value.title())
                         else:
                             raise ValueError()
+                    elif typ is type(None):
+                        casted = None
                     else:
                         casted = typ(value)
             except ValueError:
